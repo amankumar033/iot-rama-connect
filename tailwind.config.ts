@@ -61,7 +61,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Custom tiffin service colors
+				'warm-orange': 'hsl(var(--warm-orange))',
+				'light-cream': 'hsl(var(--light-cream))',
+				'fresh-green': 'hsl(var(--fresh-green))',
+				'golden-yellow': 'hsl(var(--golden-yellow))',
+				'spice-red': 'hsl(var(--spice-red))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

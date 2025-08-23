@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,14 @@ import {
   CheckCircle,
   Heart,
   Users,
-  Leaf
+  Leaf,
+  Plus,
+  Minus,
+  ShoppingCart,
+  ArrowRight,
+  Quote,
+  Award,
+  TrendingUp
 } from "lucide-react";
 
 // Import images
@@ -30,6 +37,39 @@ import vegetarianMeal from "@/assets/vegetarian-meal.jpg";
 
 const Index = () => {
   const [selectedPlan, setSelectedPlan] = useState("monthly");
+  const [cartItems, setCartItems] = useState<{[key: string]: number}>({});
+  const [isVisible, setIsVisible] = useState(false);
+  const [happyCustomers, setHappyCustomers] = useState(0);
+  const [mealsDelivered, setMealsDelivered] = useState(0);
+  const [satisfactionRate, setSatisfactionRate] = useState(0);
+
+  // Animated counters effect
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isVisible) {
+      const animateCounter = (setter: any, target: number, duration: number = 2000) => {
+        let start = 0;
+        const increment = target / (duration / 16);
+        const counter = setInterval(() => {
+          start += increment;
+          if (start >= target) {
+            setter(target);
+            clearInterval(counter);
+          } else {
+            setter(Math.floor(start));
+          }
+        }, 16);
+      };
+
+      animateCounter(setHappyCustomers, 1000);
+      animateCounter(setMealsDelivered, 50000);
+      animateCounter(setSatisfactionRate, 98);
+    }
+  }, [isVisible]);
   
   const form = useForm({
     defaultValues: {
@@ -43,32 +83,65 @@ const Index = () => {
   });
 
   const onSubmit = (data: any) => {
-    console.log("Order form submitted:", data);
-    toast.success("Thank you! We'll contact you soon to confirm your order.");
+    console.log("Order form submitted:", data, "Cart:", cartItems);
+    toast.success("🎉 Thank you! We'll contact you soon to confirm your order.");
     form.reset();
+    setCartItems({});
+  };
+
+  const updateCartItem = (itemName: string, delta: number) => {
+    setCartItems(prev => {
+      const newCount = Math.max(0, (prev[itemName] || 0) + delta);
+      if (newCount === 0) {
+        const { [itemName]: removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [itemName]: newCount };
+    });
+  };
+
+  const getTotalItems = () => Object.values(cartItems).reduce((sum, count) => sum + count, 0);
+
+  const smoothScrollTo = (elementId: string) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const menuItems = [
     {
+      id: "north-indian",
       name: "North Indian Delight",
       image: northIndianMeal,
       description: "Dal makhani, butter chicken, basmati rice, naan, raita & pickle",
       price: "₹180",
-      features: ["Rich & creamy", "Protein-rich", "Authentic taste"]
+      originalPrice: "₹200",
+      features: ["Rich & creamy", "Protein-rich", "Authentic taste"],
+      rating: 4.8,
+      preparationTime: "25 min"
     },
     {
+      id: "south-indian",
       name: "South Indian Traditional",
       image: southIndianMeal,
       description: "Sambar, rasam, rice, vegetable curry, coconut chutney & papadum",
       price: "₹160",
-      features: ["Light & healthy", "Coconut-based", "Traditional spices"]
+      originalPrice: "₹180",
+      features: ["Light & healthy", "Coconut-based", "Traditional spices"],
+      rating: 4.7,
+      preparationTime: "20 min"
     },
     {
+      id: "vegetarian",
       name: "Healthy Vegetarian",
       image: vegetarianMeal,
       description: "Mixed vegetables, chapati, yellow dal, salad & fresh yogurt",
       price: "₹150",
-      features: ["Low calories", "High fiber", "Balanced nutrition"]
+      originalPrice: "₹170",
+      features: ["Low calories", "High fiber", "Balanced nutrition"],
+      rating: 4.9,
+      preparationTime: "15 min"
     }
   ];
 
@@ -98,8 +171,45 @@ const Index = () => {
     }
   ];
 
+  const testimonials = [
+    {
+      name: "Priya Sharma",
+      role: "Working Professional",
+      content: "Best tiffin service in the city! The food tastes just like my mom's cooking. Highly recommended!",
+      rating: 5,
+      image: "👩‍💼"
+    },
+    {
+      name: "Rajesh Kumar",
+      role: "Student",
+      content: "Affordable, delicious, and always on time. Perfect for someone staying away from home.",
+      rating: 5,
+      image: "👨‍🎓"
+    },
+    {
+      name: "Anita Patel",
+      role: "Senior Manager",
+      content: "The variety and quality is exceptional. My family loves the healthy vegetarian options!",
+      rating: 5,
+      image: "👩‍💻"
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Floating Cart Button */}
+      {getTotalItems() > 0 && (
+        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
+          <Button 
+            size="lg" 
+            className="rounded-full shadow-lg bg-primary hover:bg-primary/90 p-4"
+            onClick={() => smoothScrollTo('order-form')}
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            {getTotalItems()} items
+          </Button>
+        </div>
+      )}
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-primary/10 to-accent/10 py-20 overflow-hidden">
         <div className="container mx-auto px-4">
@@ -135,28 +245,73 @@ const Index = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-white">
+                <Button 
+                  size="lg" 
+                  className="bg-primary hover:bg-primary/90 text-white hover:scale-105 transition-all duration-300 group"
+                  onClick={() => smoothScrollTo('order-form')}
+                >
                   Order Now
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-primary text-primary hover:bg-primary hover:text-white hover:scale-105 transition-all duration-300"
+                  onClick={() => smoothScrollTo('menu')}
+                >
                   View Menu
                 </Button>
               </div>
             </div>
             
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl transform rotate-6"></div>
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl transform rotate-6 group-hover:rotate-3 transition-transform duration-500"></div>
               <img 
                 src={tiffinHero} 
                 alt="Fresh Tiffin Meals" 
-                className="relative z-10 w-full h-[500px] object-cover rounded-3xl shadow-2xl"
+                className="relative z-10 w-full h-[500px] object-cover rounded-3xl shadow-2xl group-hover:scale-105 transition-all duration-500"
               />
-              <div className="absolute -bottom-4 -right-4 bg-white p-4 rounded-2xl shadow-lg border z-20">
+              
+              {/* Floating Stats */}
+              <div className="absolute -bottom-4 -right-4 bg-white p-4 rounded-2xl shadow-lg border z-20 animate-pulse">
                 <div className="flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-spice-red fill-current" />
-                  <span className="font-semibold">1000+ Happy Customers</span>
+                  <Heart className="w-5 h-5 text-spice-red fill-current animate-pulse" />
+                  <span className="font-semibold">{happyCustomers}+ Happy Customers</span>
                 </div>
               </div>
+              
+              <div className="absolute -top-4 -left-4 bg-primary text-white p-3 rounded-2xl shadow-lg z-20 animate-bounce">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5" />
+                  <span className="font-semibold text-sm">4.8★ Rated</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 bg-gradient-to-r from-primary/5 to-accent/5">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8 text-center">
+            <div className="space-y-2">
+              <div className="text-4xl font-bold text-primary animate-pulse">
+                {happyCustomers.toLocaleString()}+
+              </div>
+              <p className="text-muted-foreground font-medium">Happy Customers</p>
+            </div>
+            <div className="space-y-2">
+              <div className="text-4xl font-bold text-accent animate-pulse">
+                {mealsDelivered.toLocaleString()}+
+              </div>
+              <p className="text-muted-foreground font-medium">Meals Delivered</p>
+            </div>
+            <div className="space-y-2">
+              <div className="text-4xl font-bold text-golden-yellow animate-pulse">
+                {satisfactionRate}%
+              </div>
+              <p className="text-muted-foreground font-medium">Satisfaction Rate</p>
             </div>
           </div>
         </div>
@@ -173,9 +328,9 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                <Utensils className="w-8 h-8 text-primary" />
+            <div className="text-center space-y-4 group hover:scale-105 transition-all duration-300">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors group-hover:animate-pulse">
+                <Utensils className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
               </div>
               <h3 className="text-xl font-semibold">Fresh Daily Preparation</h3>
               <p className="text-muted-foreground">
@@ -183,9 +338,9 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto">
-                <Truck className="w-8 h-8 text-accent" />
+            <div className="text-center space-y-4 group hover:scale-105 transition-all duration-300">
+              <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto group-hover:bg-accent/20 transition-colors group-hover:animate-pulse">
+                <Truck className="w-8 h-8 text-accent group-hover:scale-110 transition-transform" />
               </div>
               <h3 className="text-xl font-semibold">Timely Delivery</h3>
               <p className="text-muted-foreground">
@@ -193,9 +348,9 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-golden-yellow/10 rounded-full flex items-center justify-center mx-auto">
-                <Shield className="w-8 h-8 text-golden-yellow" />
+            <div className="text-center space-y-4 group hover:scale-105 transition-all duration-300">
+              <div className="w-16 h-16 bg-golden-yellow/10 rounded-full flex items-center justify-center mx-auto group-hover:bg-golden-yellow/20 transition-colors group-hover:animate-pulse">
+                <Shield className="w-8 h-8 text-golden-yellow group-hover:scale-110 transition-transform" />
               </div>
               <h3 className="text-xl font-semibold">Hygienic Standards</h3>
               <p className="text-muted-foreground">
@@ -207,7 +362,7 @@ const Index = () => {
       </section>
 
       {/* Menu Section */}
-      <section className="py-16">
+      <section id="menu" className="py-16">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Our Delicious Menu</h2>
@@ -218,37 +373,90 @@ const Index = () => {
           
           <div className="grid md:grid-cols-3 gap-8">
             {menuItems.map((item, index) => (
-              <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                <div className="relative">
+              <Card key={index} className="overflow-hidden hover:shadow-xl transition-all duration-500 group hover:-translate-y-2 border-0 shadow-lg">
+                <div className="relative overflow-hidden">
                   <img 
                     src={item.image} 
                     alt={item.name}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full font-semibold">
-                    {item.price}
+                  
+                  {/* Price Badge */}
+                  <div className="absolute top-4 right-4 space-y-1">
+                    <div className="bg-primary text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg">
+                      {item.price}
+                    </div>
+                    <div className="bg-white/90 text-muted-foreground px-2 py-0.5 rounded-full text-xs line-through text-center">
+                      {item.originalPrice}
+                    </div>
+                  </div>
+                  
+                  {/* Rating */}
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
+                    <Star className="w-3 h-3 text-golden-yellow fill-current" />
+                    <span className="text-xs font-semibold">{item.rating}</span>
+                  </div>
+                  
+                  {/* Preparation Time */}
+                  <div className="absolute bottom-4 left-4 bg-black/60 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {item.preparationTime}
                   </div>
                 </div>
                 
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {item.name}
-                  </CardTitle>
-                  <CardDescription>{item.description}</CardDescription>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{item.name}</CardTitle>
+                  <CardDescription className="text-sm">{item.description}</CardDescription>
                 </CardHeader>
                 
-                <CardContent>
-                  <div className="flex flex-wrap gap-2 mb-4">
+                <CardContent className="pt-0">
+                  <div className="flex flex-wrap gap-1 mb-4">
                     {item.features.map((feature, featureIndex) => (
-                      <Badge key={featureIndex} variant="outline" className="text-xs">
+                      <Badge key={featureIndex} variant="outline" className="text-xs px-2 py-0.5">
                         {feature}
                       </Badge>
                     ))}
                   </div>
                   
-                  <Button className="w-full" variant="outline">
-                    Add to Order
-                  </Button>
+                  {/* Quantity Controls */}
+                  <div className="flex items-center justify-between">
+                    {cartItems[item.id] ? (
+                      <div className="flex items-center gap-3">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-8 h-8 p-0 hover:bg-primary hover:text-white"
+                          onClick={() => updateCartItem(item.id, -1)}
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <span className="font-semibold text-lg min-w-8 text-center">
+                          {cartItems[item.id]}
+                        </span>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-8 h-8 p-0 hover:bg-primary hover:text-white"
+                          onClick={() => updateCartItem(item.id, 1)}
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        className="hover:bg-primary hover:text-white transition-all duration-300 hover:scale-105"
+                        onClick={() => updateCartItem(item.id, 1)}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add to Cart
+                      </Button>
+                    )}
+                    
+                    <Button size="sm" className="bg-primary hover:bg-primary/90">
+                      Order Now
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -313,8 +521,45 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">What Our Customers Say</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Don't just take our word for it - hear from our satisfied customers who trust us with their daily meals.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-card/50 backdrop-blur-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="text-3xl mr-3">{testimonial.image}</div>
+                    <div>
+                      <h4 className="font-semibold">{testimonial.name}</h4>
+                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center mb-3">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 text-golden-yellow fill-current" />
+                    ))}
+                  </div>
+                  
+                  <Quote className="w-8 h-8 text-primary/20 mb-2" />
+                  <p className="text-muted-foreground italic">"{testimonial.content}"</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Order Form Section */}
-      <section className="py-16">
+      <section id="order-form" className="py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-12">
